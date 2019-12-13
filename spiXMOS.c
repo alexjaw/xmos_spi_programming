@@ -75,16 +75,19 @@ int ProgramXCORE(const int file, const char *imageFile, const uint32_t speed){
    }
    //Get file length
    fileLen = FileSize(fd);
+   printf("Size of image file %i\n", fileLen);
    //Allocate memory
    image = malloc(fileLen * sizeof(*image));
    if (!image){
       perror("SPI: Memory error!");
       fclose(fd);
       return -1;
+   }else{
+      printf("Memory allocated\n");
    }
    //Read file contents into buffer
-   fread(image, fileLen, 1, fd);
-   //printf("Size of image file %i\n", fileLen);
+   int num_of_elements = fread(image, fileLen, 1, fd);
+   printf("Num of elements %i\n", num_of_elements);  // must be same as the third argument to fread()
    fclose(fd);
    /*for (int i; i<5; i++){
       printf("image[%i]: 0x%02x\n", i, image[i]);
@@ -99,6 +102,7 @@ int ProgramXCORE(const int file, const char *imageFile, const uint32_t speed){
       .len = fileLen,
       .delay_usecs = delay,
    };
+   printf("spi_ioc_transfer struct prepared and ready for I/O\n");
    
    if (ioctl(file, SPI_IOC_WR_MODE, &mode)==-1){
       perror("SPI: Can't set SPI mode.");
@@ -132,11 +136,14 @@ int ProgramXCORE(const int file, const char *imageFile, const uint32_t speed){
    /*SPI_IOC_MESSAGE(n):
    * - n is number of separate messages in the transfer struct, &transfer
    * We are sending the code as one (1) continous sequence.
-   * See https://github.com/spotify/linux/blob/master/include/linux/spi/spidev.h
+   * See https://github.com/raspberrypi/tools/blob/master/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian/arm-linux-gnueabihf/libc/usr/include/linux/spi/spidev.h
    */
    if (ioctl(file, SPI_IOC_MESSAGE(1), &transfer)<0){
+      printf("Failed to send message. Default RPi buffer 4096, see https://www.raspberrypi.org/forums/viewtopic.php?p=309582#p309582\n");
       perror("Failed to send SPI message");
       return -1;
+   }else{
+      printf("Message sent\n");
    }
 
    free(image);
